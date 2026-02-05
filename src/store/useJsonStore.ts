@@ -64,14 +64,62 @@ function generateTabId(): string {
   return `tab-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** 为运行期新增的 JsonNode 生成唯一 id（与解析阶段的 id 不冲突即可） */
+function generateNodeId(): string {
+  return `node-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/** 重新计算整棵树的 path 与 childrenCount，保证在改键名 / 新增 / 删除后路径仍然正确 */
+function rebuildPathsForRoot(root: JsonNode): JsonNode {
+  const walk = (node: JsonNode, path: string): JsonNode => {
+    let children: JsonNode[] | undefined;
+    if (node.children && node.children.length > 0) {
+      if (node.type === 'array') {
+        children = node.children.map((child, index) =>
+          walk(child, `${path}[${index}]`),
+        );
+      } else if (node.type === 'object') {
+        children = node.children.map((child) =>
+          walk(child, `${path}.${child.key ?? ''}`),
+        );
+      } else {
+        children = node.children.map((child, index) =>
+          walk(child, `${path}.${index}`),
+        );
+      }
+    }
+
+    const updated: JsonNode = {
+      ...node,
+      path,
+      children,
+    };
+
+    if (children) {
+      updated.childrenCount = children.length;
+    }
+
+    return updated;
+  };
+
+  // 根节点原本的 path 一般就是 'root'，这里以它为起点重新走一遍
+  const startPath = root.path || 'root';
+  return walk(root, startPath);
+}
+
 export const useJsonStore = defineStore('json', {
-  state: (): JsonStoreState => ({
-    tabs: [],
-    activeTabId: null,
-    indentation: loadIndentation(),
-    loadingState: 'idle',
-    diagnosticMessage: null,
-  }),
+  state: (): JsonStoreState => {
+    // 默认创建一个空标签，方便在未打开文件时直接粘贴 JSON 文本进行查看/编辑
+    const firstId = generateTabId();
+    const firstTab = createEmptyTab(firstId);
+    return {
+      tabs: [firstTab],
+      activeTabId: firstId,
+      indentation: loadIndentation(),
+      loadingState: 'idle',
+      diagnosticMessage: null,
+    };
+  },
   getters: {
     activeTab(state): JsonTab | null {
       if (!state.activeTabId) return null;
@@ -311,6 +359,131 @@ export const useJsonStore = defineStore('json', {
       tab.rootNode = updateNodeRec(tab.rootNode);
       tab.value = nodeToValue(tab.rootNode);
       tab.currentText = formatJson(tab.value, this.indentation);
+      tab.isDirty = true;
+    },
+
+    /** 修改对象属性的键名 */
+    updateNodeKey(nodeId: string, newKey: string) {
+      const tab = this.activeTab;
+      if (!tab?.rootNode) return;
+
+      const nextKey = newKey.trim();
+      if (!nextKey) {
+        throw new Error('键名不能为空');
+      }
+      if (tab.rootNode.id === nodeId) {
+        throw new Error('不能修改根节点的键名');
+      }
+
+      const rec = (node: JsonNode): JsonNode => {
+        if (node.id === nodeId) {
+          if (node.key === undefined) {
+            throw new Error('只有对象的属性节点才有键名');
+          }
+          return {
+            ...node,
+            key: nextKey,
+          };
+        }
+        if (node.children) {
+          return {
+            ...node,
+            children: node.children.map(rec),
+          };
+        }
+        return node;
+      };
+
+      tab.rootNode = rec(tab.rootNode);
+      tab.rootNode = rebuildPathsForRoot(tab.rootNode);
+      tab.value = nodeToValue(tab.rootNode);
+      tab.currentText = formatJson(tab.value, this.indentation);
+      tab.isDirty = true;
+    },
+
+    /** 在对象或数组下新增一个子节点，默认值为 null，后续可通过编辑值修改 */
+    addChildNode(parentId: string, key?: string) {
+      const tab = this.activeTab;
+      if (!tab?.rootNode) return;
+
+      const newChild: JsonNode = {
+        id: generateNodeId(),
+        type: 'null',
+        key,
+        value: null,
+        path: '',
+        collapsed: false,
+      };
+
+      const rec = (node: JsonNode): JsonNode => {
+        if (node.id === parentId) {
+          if (node.type === 'object') {
+            if (!newChild.key) {
+              throw new Error('对象子节点必须提供键名');
+            }
+          } else if (node.type === 'array') {
+            // 数组元素没有 key
+            newChild.key = undefined;
+          } else {
+            throw new Error('只能在对象或数组节点下新增子项');
+          }
+
+          const children = [...(node.children ?? []), newChild];
+          return {
+            ...node,
+            children,
+            childrenCount: children.length,
+          };
+        }
+
+        if (node.children) {
+          return {
+            ...node,
+            children: node.children.map(rec),
+          };
+        }
+
+        return node;
+      };
+
+      tab.rootNode = rec(tab.rootNode);
+      tab.rootNode = rebuildPathsForRoot(tab.rootNode);
+      tab.value = nodeToValue(tab.rootNode);
+      tab.currentText = formatJson(tab.value, this.indentation);
+      tab.isDirty = true;
+    },
+
+    /** 删除某个节点（根节点除外） */
+    deleteNode(nodeId: string) {
+      const tab = this.activeTab;
+      if (!tab?.rootNode) return;
+      if (tab.rootNode.id === nodeId) {
+        throw new Error('不能删除根节点');
+      }
+
+      const rec = (node: JsonNode): JsonNode => {
+        if (!node.children || node.children.length === 0) {
+          return node;
+        }
+
+        const kept = node.children
+          .filter((child) => child.id !== nodeId)
+          .map(rec);
+
+        return {
+          ...node,
+          children: kept,
+          childrenCount: kept.length,
+        };
+      };
+
+      tab.rootNode = rec(tab.rootNode);
+      tab.rootNode = rebuildPathsForRoot(tab.rootNode);
+      tab.value = nodeToValue(tab.rootNode);
+      tab.currentText = formatJson(tab.value, this.indentation);
+      if (tab.selectedNodeId === nodeId) {
+        tab.selectedNodeId = null;
+      }
       tab.isDirty = true;
     },
 

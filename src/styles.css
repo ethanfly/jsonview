@@ -490,6 +490,36 @@ body {
   font-family: inherit;
 }
 
+.json-node-key-edit.input {
+  min-width: 80px;
+  font-family: inherit;
+}
+
+.json-node-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.json-node-action-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.json-node-action-btn:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+  border-color: var(--border-focus);
+}
+
 /* ========== 搜索面板 ========== */
 .search-panel {
   display: flex;
