@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia';
 
-export type ThemeId = 'dark' | 'light' | 'ocean' | 'forest' | 'violet';
+export type ThemeId = 'dark' | 'light' | 'ocean';
 
 const THEME_KEY = 'jsonview.theme';
 
 function loadTheme(): ThemeId {
   const stored = window.localStorage.getItem(THEME_KEY) as ThemeId | null;
-  const valid: ThemeId[] = ['dark', 'light', 'ocean', 'forest', 'violet'];
+  const valid: ThemeId[] = ['dark', 'light', 'ocean'];
   if (stored && valid.includes(stored)) return stored;
   return 'dark';
 }

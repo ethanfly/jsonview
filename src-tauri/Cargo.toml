@@ -11,8 +11,10 @@ tauri-build = { version = "2.0.0", features = [] }
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tauri = { version = "2.0.0", features = [] }
+# 需要开启 devtools 特性，才能在 Rust 端调用 open_devtools()
+tauri = { version = "2.0.0", features = ["devtools"] }
 tauri-plugin-dialog = "2.0"
+tauri-plugin-single-instance = "2.3.7"
 url = "2.5"
 
 [profile.release]

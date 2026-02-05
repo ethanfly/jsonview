@@ -7,24 +7,47 @@ import { openJsonFileDialog, openJsonFileByPath, saveJsonFile, saveJsonFileAs } 
 
 export type LoadingState = 'idle' | 'parsing' | 'formatting' | 'saving';
 
-export interface JsonStoreState {
+export interface JsonTab {
+  id: string;
   filePath: string | null;
   isDirty: boolean;
   originalText: string;
   currentText: string;
   rootNode: JsonNode | null;
   value: JsonValue | null;
-  indentation: Indentation;
-  validation: {
-    valid: boolean;
-    message?: string;
-  };
-  loadingState: LoadingState;
+  validation: { valid: boolean; message?: string };
   searchKeyword: string;
   searchCaseSensitive: boolean;
   searchResults: SearchMatch[];
   currentSearchIndex: number;
   selectedNodeId: string | null;
+}
+
+function createEmptyTab(id: string): JsonTab {
+  return {
+    id,
+    filePath: null,
+    isDirty: false,
+    originalText: '',
+    currentText: '',
+    rootNode: null,
+    value: null,
+    validation: { valid: true },
+    searchKeyword: '',
+    searchCaseSensitive: false,
+    searchResults: [],
+    currentSearchIndex: -1,
+    selectedNodeId: null,
+  };
+}
+
+export interface JsonStoreState {
+  tabs: JsonTab[];
+  activeTabId: string | null;
+  indentation: Indentation;
+  loadingState: LoadingState;
+  /** 诊断信息（点击工具栏「诊断」后显示在状态栏） */
+  diagnosticMessage: string | null;
 }
 
 const INDENT_KEY = 'jsonview.indentation';
@@ -37,37 +60,131 @@ function loadIndentation(): Indentation {
   return '2spaces';
 }
 
+function generateTabId(): string {
+  return `tab-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export const useJsonStore = defineStore('json', {
   state: (): JsonStoreState => ({
-    filePath: null,
-    isDirty: false,
-    originalText: '',
-    currentText: '',
-    rootNode: null,
-    value: null,
+    tabs: [],
+    activeTabId: null,
     indentation: loadIndentation(),
-    validation: { valid: true },
     loadingState: 'idle',
-    searchKeyword: '',
-    searchCaseSensitive: false,
-    searchResults: [],
-    currentSearchIndex: -1,
-    selectedNodeId: null,
+    diagnosticMessage: null,
   }),
   getters: {
-    currentMatch(state): SearchMatch | null {
-      if (state.currentSearchIndex < 0 || state.currentSearchIndex >= state.searchResults.length) {
+    activeTab(state): JsonTab | null {
+      if (!state.activeTabId) return null;
+      return state.tabs.find((t) => t.id === state.activeTabId) ?? null;
+    },
+    filePath(state): string | null {
+      return this.activeTab?.filePath ?? null;
+    },
+    isDirty(): boolean {
+      return this.activeTab?.isDirty ?? false;
+    },
+    originalText(): string {
+      return this.activeTab?.originalText ?? '';
+    },
+    currentText(): string {
+      return this.activeTab?.currentText ?? '';
+    },
+    rootNode(): JsonNode | null {
+      return this.activeTab?.rootNode ?? null;
+    },
+    value(): JsonValue | null {
+      return this.activeTab?.value ?? null;
+    },
+    validation(): { valid: boolean; message?: string } {
+      return this.activeTab?.validation ?? { valid: true };
+    },
+    searchKeyword(): string {
+      return this.activeTab?.searchKeyword ?? '';
+    },
+    searchCaseSensitive(): boolean {
+      return this.activeTab?.searchCaseSensitive ?? false;
+    },
+    searchResults(): SearchMatch[] {
+      return this.activeTab?.searchResults ?? [];
+    },
+    currentSearchIndex(): number {
+      return this.activeTab?.currentSearchIndex ?? -1;
+    },
+    selectedNodeId(): string | null {
+      return this.activeTab?.selectedNodeId ?? null;
+    },
+    currentMatch(): SearchMatch | null {
+      const tab = this.activeTab;
+      if (!tab || tab.currentSearchIndex < 0 || tab.currentSearchIndex >= tab.searchResults.length) {
         return null;
       }
-      return state.searchResults[state.currentSearchIndex];
+      return tab.searchResults[tab.currentSearchIndex];
     },
   },
   actions: {
+    addTab(content: { text: string; path: string | null }) {
+      const existing = content.path
+        ? this.tabs.find((t) => t.filePath && t.filePath === content.path)
+        : null;
+      if (existing) {
+        this.activeTabId = existing.id;
+        return;
+      }
+      const id = generateTabId();
+      const tab = createEmptyTab(id);
+      this.applyNewContentToTab(tab, content.text, content.path);
+      this.tabs.push(tab);
+      this.activeTabId = id;
+    },
+
+    closeTab(id: string) {
+      const idx = this.tabs.findIndex((t) => t.id === id);
+      if (idx < 0) return;
+      this.tabs.splice(idx, 1);
+      if (this.activeTabId === id) {
+        if (this.tabs.length > 0) {
+          this.activeTabId = this.tabs[Math.min(idx, this.tabs.length - 1)].id;
+        } else {
+          this.activeTabId = null;
+        }
+      }
+    },
+
+    setActiveTab(id: string) {
+      if (this.tabs.some((t) => t.id === id)) {
+        this.activeTabId = id;
+      }
+    },
+
+    applyNewContentToTab(
+      tab: JsonTab,
+      text: string,
+      path: string | null,
+    ) {
+      try {
+        const { root, value } = parseJson(text);
+        tab.filePath = path;
+        tab.originalText = text;
+        tab.value = value;
+        tab.rootNode = root;
+        tab.currentText = formatJson(value, this.indentation);
+        tab.validation = { valid: true };
+        tab.isDirty = false;
+        tab.searchKeyword = '';
+        tab.searchResults = [];
+        tab.currentSearchIndex = -1;
+      } catch (e: any) {
+        tab.validation = { valid: false, message: e?.message || 'JSON 无效' };
+        throw e;
+      }
+    },
+
     setIndentation(indent: Indentation) {
       this.indentation = indent;
       window.localStorage.setItem(INDENT_KEY, indent);
-      if (this.value != null) {
-        this.currentText = formatJson(this.value, this.indentation);
+      const tab = this.activeTab;
+      if (tab?.value != null) {
+        tab.currentText = formatJson(tab.value, indent);
       }
     },
 
@@ -75,7 +192,7 @@ export const useJsonStore = defineStore('json', {
       this.loadingState = 'parsing';
       try {
         const { content, path } = await openJsonFileDialog();
-        this.applyNewContent(content, path);
+        this.addTab({ text: content, path });
       } catch (e: any) {
         console.error('打开文件失败', e);
       } finally {
@@ -87,61 +204,54 @@ export const useJsonStore = defineStore('json', {
       this.loadingState = 'parsing';
       try {
         const { content } = await openJsonFileByPath(path);
-        this.applyNewContent(content, path);
+        this.addTab({ text: content, path });
       } catch (e) {
         console.error('通过路径打开文件失败', e);
+        this.setDiagnosticMessage(`通过路径打开失败：${path}（${String(e)}）`);
       } finally {
         this.loadingState = 'idle';
       }
     },
 
     applyNewContent(text: string, path: string | null) {
-      try {
-        const { root, value } = parseJson(text);
-        this.filePath = path;
-        this.originalText = text;
-        this.value = value;
-        this.rootNode = root;
-        this.currentText = formatJson(value, this.indentation);
-        this.validation = { valid: true };
-        this.isDirty = false;
-        this.clearSearch();
-      } catch (e: any) {
-        this.validation = { valid: false, message: e?.message || 'JSON 无效' };
-        throw e;
-      }
+      const tab = this.activeTab;
+      if (!tab) return;
+      this.applyNewContentToTab(tab, text, path);
     },
 
     updateFromRawText(text: string) {
-      this.currentText = text;
+      const tab = this.activeTab;
+      if (!tab) return;
+      tab.currentText = text;
       const result = validateJson(text);
-      this.validation = { valid: result.valid, message: result.message };
+      tab.validation = { valid: result.valid, message: result.message };
       if (result.valid) {
         try {
           const { root, value } = parseJson(text);
-          this.rootNode = root;
-          this.value = value;
-          this.isDirty = text !== this.originalText;
+          tab.rootNode = root;
+          tab.value = value;
+          tab.isDirty = text !== tab.originalText;
         } catch (e) {
-          // 解析失败时保持原状态
+          // ignore
         }
       }
     },
 
     async saveCurrentFile() {
-      if (!this.value) return;
+      const tab = this.activeTab;
+      if (!tab?.value) return;
       this.loadingState = 'saving';
       try {
-        const content = formatJson(this.value, this.indentation);
-        if (this.filePath) {
-          await saveJsonFile(this.filePath, content);
+        const content = formatJson(tab.value, this.indentation);
+        if (tab.filePath) {
+          await saveJsonFile(tab.filePath, content);
         } else {
           const newPath = await saveJsonFileAs(content);
-          this.filePath = newPath;
+          tab.filePath = newPath;
         }
-        this.originalText = content;
-        this.currentText = content;
-        this.isDirty = false;
+        tab.originalText = content;
+        tab.currentText = content;
+        tab.isDirty = false;
       } catch (e) {
         console.error('保存失败', e);
       } finally {
@@ -150,16 +260,18 @@ export const useJsonStore = defineStore('json', {
     },
 
     markDirty() {
-      this.isDirty = true;
+      const tab = this.activeTab;
+      if (tab) tab.isDirty = true;
     },
 
-    // 节点编辑相关
     selectNode(id: string | null) {
-      this.selectedNodeId = id;
+      const tab = this.activeTab;
+      if (tab) tab.selectedNodeId = id;
     },
 
     updateNodeValue(nodeId: string, rawInput: string) {
-      if (!this.rootNode || this.value == null) return;
+      const tab = this.activeTab;
+      if (!tab?.rootNode || tab.value == null) return;
       const validRes = validateJsonValueFragment(rawInput);
       if (!validRes.valid) {
         throw new Error(validRes.message || '值不是合法的 JSON 片段');
@@ -169,7 +281,6 @@ export const useJsonStore = defineStore('json', {
       const updateNodeRec = (node: JsonNode): JsonNode => {
         if (node.id === nodeId) {
           if (node.type === 'object' || node.type === 'array') {
-            // 不允许直接将复合类型节点改成原始，简单起见先限制
             throw new Error('暂不支持直接将对象/数组节点改为原始值');
           }
           const type =
@@ -197,55 +308,59 @@ export const useJsonStore = defineStore('json', {
         return node;
       };
 
-      this.rootNode = updateNodeRec(this.rootNode);
-      // 从更新后的树重建 value 和 currentText，保证回车后修改生效
-      this.value = nodeToValue(this.rootNode);
-      this.currentText = formatJson(this.value, this.indentation);
-      this.isDirty = true;
+      tab.rootNode = updateNodeRec(tab.rootNode);
+      tab.value = nodeToValue(tab.rootNode);
+      tab.currentText = formatJson(tab.value, this.indentation);
+      tab.isDirty = true;
     },
 
-    /** 格式化当前 JSON：按当前缩进重新排版 */
     formatCurrent() {
-      if (this.value != null) {
-        this.currentText = formatJson(this.value, this.indentation);
-        this.isDirty = this.currentText !== this.originalText;
+      const tab = this.activeTab;
+      if (!tab) return;
+      if (tab.value != null) {
+        tab.currentText = formatJson(tab.value, this.indentation);
+        tab.isDirty = tab.currentText !== tab.originalText;
         return;
       }
-      if (this.currentText.trim()) {
+      if (tab.currentText.trim()) {
         try {
-          const { root, value } = parseJson(this.currentText);
-          this.rootNode = root;
-          this.value = value;
-          this.validation = { valid: true };
-          this.currentText = formatJson(this.value, this.indentation);
-          this.isDirty = this.currentText !== this.originalText;
+          const { root, value } = parseJson(tab.currentText);
+          tab.rootNode = root;
+          tab.value = value;
+          tab.validation = { valid: true };
+          tab.currentText = formatJson(value, this.indentation);
+          tab.isDirty = tab.currentText !== tab.originalText;
         } catch {
-          // 无效 JSON 时不覆盖
+          // ignore
         }
       }
     },
 
     compressCurrent() {
-      if (this.value != null) {
-        this.currentText = compressJson(this.value);
-        this.isDirty = this.currentText !== this.originalText;
+      const tab = this.activeTab;
+      if (!tab) return;
+      if (tab.value != null) {
+        tab.currentText = compressJson(tab.value);
+        tab.isDirty = tab.currentText !== tab.originalText;
         return;
       }
-      if (this.currentText.trim()) {
+      if (tab.currentText.trim()) {
         try {
-          const { root, value } = parseJson(this.currentText);
-          this.rootNode = root;
-          this.value = value;
-          this.validation = { valid: true };
-          this.currentText = compressJson(this.value);
-          this.isDirty = this.currentText !== this.originalText;
+          const { root, value } = parseJson(tab.currentText);
+          tab.rootNode = root;
+          tab.value = value;
+          tab.validation = { valid: true };
+          tab.currentText = compressJson(value);
+          tab.isDirty = tab.currentText !== tab.originalText;
         } catch {
-          // 无效 JSON 时不覆盖
+          // ignore
         }
       }
     },
 
     toggleNodeCollapse(nodeId: string) {
+      const tab = this.activeTab;
+      if (!tab?.rootNode) return;
       const rec = (node: JsonNode): JsonNode => {
         if (node.id === nodeId) {
           return { ...node, collapsed: !node.collapsed };
@@ -255,38 +370,55 @@ export const useJsonStore = defineStore('json', {
         }
         return node;
       };
-      if (this.rootNode) {
-        this.rootNode = rec(this.rootNode);
-      }
+      tab.rootNode = rec(tab.rootNode);
     },
 
-    // 搜索
     runSearch(keyword: string) {
-      this.searchKeyword = keyword;
-      this.searchResults = searchJson(this.rootNode, keyword, {
-        caseSensitive: this.searchCaseSensitive,
+      const tab = this.activeTab;
+      if (!tab) return;
+      tab.searchKeyword = keyword;
+      tab.searchResults = searchJson(tab.rootNode, keyword, {
+        caseSensitive: tab.searchCaseSensitive,
       });
-      this.currentSearchIndex = this.searchResults.length > 0 ? 0 : -1;
+      tab.currentSearchIndex = tab.searchResults.length > 0 ? 0 : -1;
     },
 
     nextMatch() {
-      if (this.searchResults.length === 0) return;
-      this.currentSearchIndex =
-        (this.currentSearchIndex + 1) % this.searchResults.length;
+      const tab = this.activeTab;
+      if (!tab || tab.searchResults.length === 0) return;
+      tab.currentSearchIndex =
+        (tab.currentSearchIndex + 1) % tab.searchResults.length;
     },
 
     prevMatch() {
-      if (this.searchResults.length === 0) return;
-      this.currentSearchIndex =
-        (this.currentSearchIndex - 1 + this.searchResults.length) %
-        this.searchResults.length;
+      const tab = this.activeTab;
+      if (!tab || tab.searchResults.length === 0) return;
+      tab.currentSearchIndex =
+        (tab.currentSearchIndex - 1 + tab.searchResults.length) %
+        tab.searchResults.length;
+    },
+
+    setSearchCaseSensitive(v: boolean) {
+      const tab = this.activeTab;
+      if (tab) tab.searchCaseSensitive = v;
+    },
+
+    setSearchKeyword(keyword: string) {
+      const tab = this.activeTab;
+      if (tab) tab.searchKeyword = keyword;
     },
 
     clearSearch() {
-      this.searchKeyword = '';
-      this.searchResults = [];
-      this.currentSearchIndex = -1;
+      const tab = this.activeTab;
+      if (tab) {
+        tab.searchKeyword = '';
+        tab.searchResults = [];
+        tab.currentSearchIndex = -1;
+      }
+    },
+
+    setDiagnosticMessage(msg: string | null) {
+      this.diagnosticMessage = msg;
     },
   },
 });
-

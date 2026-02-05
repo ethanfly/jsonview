@@ -25,7 +25,5 @@ const themes: { id: ThemeId; name: string }[] = [
   { id: 'dark', name: '深色科技' },
   { id: 'light', name: '浅色简约' },
   { id: 'ocean', name: '蔚蓝' },
-  { id: 'forest', name: '森林' },
-  { id: 'violet', name: '紫罗兰' },
 ];
 </script>

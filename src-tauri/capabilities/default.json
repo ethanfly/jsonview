@@ -6,6 +6,8 @@
     "main"
   ],
   "permissions": [
+    "core:event:default",
+    "core:app:default",
     "core:window:default",
     "core:window:allow-close",
     "core:window:allow-minimize",
@@ -13,6 +15,7 @@
     "core:window:allow-unmaximize",
     "core:window:allow-is-maximized",
     "dialog:allow-open",
-    "dialog:allow-save"
+    "dialog:allow-save",
+    "core:menu:default"
   ]
 }

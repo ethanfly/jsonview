@@ -9,8 +9,12 @@
       @select="onSelect"
     />
   </div>
-  <div v-else class="json-tree">
-    <span>请通过“打开”按钮选择 JSON 文件。</span>
+  <div
+    v-else
+    class="json-tree json-tree-empty"
+    @click="store.openFile()"
+  >
+    <span class="json-tree-empty-main">点击打开 JSON 文件</span>
   </div>
 </template>
 

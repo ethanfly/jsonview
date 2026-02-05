@@ -5,15 +5,81 @@
   <meta charset="UTF-8" />
   <title>JSON Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet" />
+  <style>
+    /* 内联关键 CSS 避免白屏 */
+    :root {
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #0c0e14;
+      overflow: hidden;
+    }
+    #app {
+      height: 100vh;
+      background: #0c0e14;
+    }
+    /* 加载骨架屏 */
+    .app-skeleton {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #0c0e14;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .skeleton-titlebar {
+      height: 32px;
+      background: #151922;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.6);
+    }
+    .skeleton-toolbar {
+      height: 56px;
+      background: #1a1e28;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.6);
+    }
+    .skeleton-main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .skeleton-panel {
+      flex: 1;
+      background: #151922;
+      border-right: 1px solid rgba(71, 85, 105, 0.6);
+    }
+    .skeleton-editor {
+      flex: 2;
+      background: #151922;
+    }
+    .skeleton-footer {
+      height: 32px;
+      background: #151922;
+      border-top: 1px solid rgba(71, 85, 105, 0.6);
+    }
+    /* 隐藏骨架屏 */
+    .app-skeleton.hidden {
+      display: none;
+    }
+  </style>
 </head>
 
 <body>
+  <!-- 骨架屏：立即显示，避免白屏 -->
+  <div id="skeleton" class="app-skeleton">
+    <div class="skeleton-titlebar"></div>
+    <div class="skeleton-toolbar"></div>
+    <div class="skeleton-main">
+      <div class="skeleton-panel"></div>
+      <div class="skeleton-editor"></div>
+    </div>
+    <div class="skeleton-footer"></div>
+  </div>
+  
   <div id="app"></div>
+  
   <script type="module" src="/src/main.ts"></script>
 </body>
 

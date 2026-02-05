@@ -16,7 +16,12 @@
         "width": 1200,
         "height": 800,
         "resizable": true,
-        "decorations": false
+        "decorations": false,
+        "backgroundColor": "#0c0e14FF",
+        "dragDropEnabled": true,
+        "devtools": true,
+        "visible": false,
+        "skipTaskbar": false
       }
     ]
   },
@@ -50,6 +55,20 @@
           "public.json"
         ]
       }
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
+        "displayLanguageSelector": true,
+        "customLanguageFiles": {
+          "SimpChinese": "./windows/nsis/SimpChinese.nsh"
+        },
+        "installerHooks": "./windows/hooks.nsh"
+      }
+    }
   }
 }

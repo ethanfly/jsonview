@@ -1,4 +1,8 @@
 /* ========== 基础与默认主题（深色科技） ========== */
+:root {
+  color-scheme: dark;
+}
+
 :root,
 [data-theme="dark"] {
   --bg-app: #0c0e14;
@@ -80,58 +84,6 @@
   --json-null: #7dd3fc;
 }
 
-/* 森林 */
-[data-theme="forest"] {
-  --bg-app: #0d1612;
-  --bg-panel: #132019;
-  --bg-header: #0f1c16;
-  --bg-toolbar: #15241c;
-  --bg-input: #1a2e22;
-  --bg-hover: rgba(52, 211, 153, 0.08);
-  --border: rgba(74, 222, 128, 0.2);
-  --border-focus: rgba(34, 197, 94, 0.7);
-  --text-primary: #dcfce7;
-  --text-secondary: #86efac;
-  --accent: #4ade80;
-  --accent-hover: #86efac;
-  --accent-bg: rgba(34, 197, 94, 0.12);
-  --success: #22c55e;
-  --error: #f87171;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --json-key: #facc15;
-  --json-string: #4ade80;
-  --json-number: #38bdf8;
-  --json-boolean: #f472b6;
-  --json-null: #86efac;
-}
-
-/* 紫罗兰 */
-[data-theme="violet"] {
-  --bg-app: #0f0a14;
-  --bg-panel: #1a1225;
-  --bg-header: #15101f;
-  --bg-toolbar: #1e1628;
-  --bg-input: #251c33;
-  --bg-hover: rgba(167, 139, 250, 0.08);
-  --border: rgba(196, 181, 253, 0.25);
-  --border-focus: rgba(139, 92, 246, 0.7);
-  --text-primary: #ede9fe;
-  --text-secondary: #c4b5fd;
-  --accent: #a78bfa;
-  --accent-hover: #c4b5fd;
-  --accent-bg: rgba(139, 92, 246, 0.15);
-  --success: #34d399;
-  --error: #fb7185;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --json-key: #fbbf24;
-  --json-string: #34d399;
-  --json-number: #a78bfa;
-  --json-boolean: #f472b6;
-  --json-null: #c4b5fd;
-}
-
 /* ========== 根布局 ========== */
 html,
 body {
@@ -146,7 +98,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
   background: var(--bg-app);
   color: var(--text-primary);
   overflow: hidden;
@@ -170,7 +122,8 @@ body {
 }
 
 .app-main {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   overflow: hidden;
 }
@@ -178,9 +131,19 @@ body {
 .tree-panel {
   width: 38%;
   min-width: 280px;
+  min-height: 0;
+  height: 100%;
   background: var(--bg-panel);
   border-right: 1px solid var(--border);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-panel>* {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
 }
 
 .editor-panel {
@@ -190,7 +153,9 @@ body {
 }
 
 .app-footer {
-  flex: 0 0 32px;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  min-height: 32px;
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -261,6 +226,12 @@ body {
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.btn.diagnostic {
+  font-size: 12px;
+  padding: 6px 10px;
+  opacity: 0.85;
 }
 
 .input {
@@ -357,14 +328,6 @@ body {
   background: linear-gradient(135deg, #0e7490 50%, #0c4a6e 50%);
 }
 
-.theme-btn[data-theme="forest"] span {
-  background: linear-gradient(135deg, #15803d 50%, #14532d 50%);
-}
-
-.theme-btn[data-theme="violet"] span {
-  background: linear-gradient(135deg, #7c3aed 50%, #4c1d95 50%);
-}
-
 /* ========== 状态栏 ========== */
 .status-bar {
   display: flex;
@@ -387,6 +350,35 @@ body {
   font-weight: 500;
 }
 
+/* 诊断信息：仅展示启动参数等，不是拖放区 */
+.status-diagnostic-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 50%;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+}
+
+.status-diagnostic-wrap:hover {
+  color: var(--accent);
+}
+
+.status-diagnostic-label {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.status-diagnostic-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .search-label {
   display: flex;
   align-items: center;
@@ -401,11 +393,35 @@ body {
 /* ========== 树视图 ========== */
 .json-tree {
   height: 100%;
+  min-height: 0;
   overflow: auto;
   padding: 16px 20px;
-  font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', ui-monospace, Consolas, monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.json-tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin: 16px;
+  min-height: 100px;
+}
+
+.json-tree-empty:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.json-tree-empty-main {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .json-node {
@@ -523,7 +539,7 @@ body {
   padding: 16px 20px;
   background: var(--bg-panel);
   color: var(--text-primary);
-  font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', ui-monospace, Consolas, monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   font-size: 13px;
   line-height: 1.65;
   resize: none;

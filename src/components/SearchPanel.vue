@@ -26,8 +26,14 @@ import { useJsonStore } from '../store/useJsonStore';
 const store = useJsonStore();
 
 const searchInputRef = ref<HTMLInputElement | null>(null);
-const keyword = ref(store.searchKeyword);
-const caseSensitive = ref(store.searchCaseSensitive);
+const keyword = computed({
+  get: () => store.searchKeyword,
+  set: (v: string) => store.setSearchKeyword(v),
+});
+const caseSensitive = computed({
+  get: () => store.searchCaseSensitive,
+  set: (v: boolean) => store.setSearchCaseSensitive(v),
+});
 
 function onKeyDown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
@@ -47,7 +53,6 @@ onUnmounted(() => {
 watch(
   () => caseSensitive.value,
   () => {
-    store.searchCaseSensitive = caseSensitive.value;
     if (keyword.value) {
       store.runSearch(keyword.value);
     }
