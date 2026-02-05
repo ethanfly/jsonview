@@ -1,7 +1,7 @@
-﻿[package]
+[package]
 name = "jsonview"
 version = "0.1.3"
-description = "JSON 妗岄潰闃呰鍣?
+description = "JSON 界面阅读器"
 authors = ["You"]
 edition = "2021"
 
@@ -11,7 +11,7 @@ tauri-build = { version = "0.1.3", features = [] }
 [dependencies]
 serde = { version = "0.1.3", features = ["derive"] }
 serde_json = "1.0"
-# 闇€瑕佸紑鍚?devtools 鐗规€э紝鎵嶈兘鍦?Rust 绔皟鐢?open_devtools()
+# 需要开启 devtools 特性，才能在 Rust 端调用 open_devtools()
 tauri = { version = "0.1.3", features = ["devtools"] }
 tauri-plugin-dialog = "2.0"
 tauri-plugin-single-instance = "2.3.7"
@@ -19,8 +19,4 @@ url = "2.5"
 
 [profile.release]
 opt-level = "s"
-
-
-
-
 
