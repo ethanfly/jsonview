@@ -1,0 +1,62 @@
+name: Test Build (Simplified)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, windows-latest, macos-latest]
+    
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build:web
+
+      - name: Check Rust code
+        working-directory: src-tauri
+        run: cargo check
+
+      - name: Build Tauri (Debug)
+        working-directory: src-tauri
+        run: cargo build
+
+      - name: Show build info
+        run: |
+          echo "Node version:"
+          node --version
+          echo "NPM version:"
+          npm --version
+          echo "Rust version:"
+          rustc --version
+          echo "Cargo version:"
+          cargo --version
