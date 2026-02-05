@@ -1,0 +1,48 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景：圆角方块 + 渐变蓝 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="96" y="96" width="832" height="832" rx="200" ry="200" fill="url(#bgGradient)"/>
+
+  <!-- 轻微内阴影感（简单版，高亮边 + 暗边） -->
+  <rect x="96" y="96" width="832" height="832" rx="200" ry="200"
+        fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="12"/>
+  <rect x="104" y="120" width="816" height="808" rx="190" ry="190"
+        fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="10"/>
+
+  <!-- 中央 {} 符号 -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 左大括号 -->
+    <path d="
+      M 380 280
+      C 330 280 320 320 320 360
+      L 320 412
+      C 320 448 304 472 280 488
+      C 304 504 320 528 320 564
+      L 320 616
+      C 320 656 330 696 380 696
+    "/>
+    <!-- 右大括号 -->
+    <path d="
+      M 644 280
+      C 694 280 704 320 704 360
+      L 704 412
+      C 704 448 720 472 744 488
+      C 720 504 704 528 704 564
+      L 704 616
+      C 704 656 694 696 644 696
+    "/>
+  </g>
+
+  <!-- 右下角 JSON 小方块点缀 -->
+  <g transform="translate(640,640)" fill="rgba(255,255,255,0.75)">
+    <rect x="0" y="0" width="72" height="72" rx="18" />
+    <rect x="96" y="32" width="64" height="64" rx="16" opacity="0.8"/>
+    <rect x="48" y="-72" width="56" height="56" rx="14" opacity="0.6"/>
+  </g>
+</svg>
