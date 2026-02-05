@@ -68,6 +68,26 @@ function tabLabel(tab: JsonTab): string {
   gap: 0;
   flex: 1;
   overflow-x: auto;
+  overflow-y: hidden;
+  /* 让滚动区域刚好包住标签，避免出现多余的上下滚动条 */
+}
+
+/* 水平滚动条样式优化（Chromium / WebView2 等） */
+.tab-list::-webkit-scrollbar {
+  height: 6px; /* 更细一些，只在需要时出现 */
+}
+
+.tab-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tab-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+.tab-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.28);
 }
 
 .tab-item {
