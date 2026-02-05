@@ -1,24 +1,34 @@
 <template>
-  <div class="tab-bar" v-if="tabs.length > 0">
-    <div
-      v-for="tab in tabs"
-      :key="tab.id"
-      role="tab"
-      class="tab-item"
-      :class="{ active: tab.id === activeTabId }"
-      tabindex="0"
-      @click="store.setActiveTab(tab.id)"
-    >
-      <span class="tab-label">{{ tabLabel(tab) }}</span>
-      <button
-        type="button"
-        class="tab-close"
-        aria-label="关闭"
-        @click.stop="store.closeTab(tab.id)"
+  <div class="tab-bar">
+    <div class="tab-list" v-if="tabs.length > 0">
+      <div
+        v-for="tab in tabs"
+        :key="tab.id"
+        role="tab"
+        class="tab-item"
+        :class="{ active: tab.id === activeTabId }"
+        tabindex="0"
+        @click="store.setActiveTab(tab.id)"
       >
-        ×
-      </button>
+        <span class="tab-label">{{ tabLabel(tab) }}</span>
+        <button
+          type="button"
+          class="tab-close"
+          aria-label="关闭"
+          @click.stop="store.closeTab(tab.id)"
+        >
+          ×
+        </button>
+      </div>
     </div>
+    <button
+      type="button"
+      class="tab-new"
+      title="新建标签页"
+      @click="store.createNewTab()"
+    >
+      +
+    </button>
   </div>
 </template>
 
@@ -45,11 +55,18 @@ function tabLabel(tab: JsonTab): string {
 .tab-bar {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 4px;
   padding: 0 8px;
   min-height: 36px;
   background: var(--bg-toolbar);
   border-bottom: 1px solid var(--border);
+}
+
+.tab-list {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
   overflow-x: auto;
 }
 
@@ -107,5 +124,28 @@ function tabLabel(tab: JsonTab): string {
 .tab-close:hover {
   background: var(--accent-bg);
   color: var(--accent);
+}
+
+.tab-new {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-left: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-new:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+  border-color: var(--border-focus);
 }
 </style>

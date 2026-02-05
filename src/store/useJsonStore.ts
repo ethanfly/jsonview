@@ -193,9 +193,21 @@ export const useJsonStore = defineStore('json', {
         if (this.tabs.length > 0) {
           this.activeTabId = this.tabs[Math.min(idx, this.tabs.length - 1)].id;
         } else {
-          this.activeTabId = null;
+          // 所有标签被关闭后，自动创建一个新的空标签页，方便继续粘贴 JSON
+          const newId = generateTabId();
+          const newTab = createEmptyTab(newId);
+          this.tabs.push(newTab);
+          this.activeTabId = newId;
         }
       }
+    },
+
+    /** 手动新建一个空白标签页 */
+    createNewTab() {
+      const id = generateTabId();
+      const tab = createEmptyTab(id);
+      this.tabs.push(tab);
+      this.activeTabId = id;
     },
 
     setActiveTab(id: string) {

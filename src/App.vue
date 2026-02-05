@@ -43,6 +43,30 @@ onMounted(async () => {
   
   // 键盘事件监听
   const onKeyDown = (e: KeyboardEvent) => {
+    // Alt+Shift+F：格式化当前 JSON
+    if (e.altKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      e.stopPropagation();
+      store.formatCurrent();
+      return;
+    }
+
+    // Alt+Shift+D：压缩当前 JSON
+    if (e.altKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      e.stopPropagation();
+      store.compressCurrent();
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      // Ctrl+S / Cmd+S 保存当前文件
+      e.preventDefault();
+      e.stopPropagation();
+      void store.saveCurrentFile();
+      return;
+    }
+
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
       if (store.activeTabId) {
         e.preventDefault();

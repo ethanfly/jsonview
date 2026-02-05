@@ -60,6 +60,24 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Sync version to tauri.conf.json
+        shell: bash
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          echo "Syncing version $VERSION to src-tauri/tauri.conf.json"
+          node - <<'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const configPath = path.join('src-tauri', 'tauri.conf.json');
+          const version = process.env.VERSION;
+          const json = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          json.version = version;
+          fs.writeFileSync(configPath, JSON.stringify(json, null, 2));
+          console.log('Updated tauri.conf.json version to', version);
+          EOF
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+
       - name: Check if release tag exists
         id: check_tag
         shell: bash

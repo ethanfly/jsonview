@@ -4,8 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "vite",
-        "ensure-nsis": "node -e \"if (process.platform === \u0027win32\u0027) { const c = require(\u0027child_process\u0027); const r = c.spawnSync(\u0027powershell\u0027, [\u0027-ExecutionPolicy\u0027,\u0027Bypass\u0027,\u0027-NoProfile\u0027,\u0027-File\u0027,\u0027scripts/ensure-nsis-windows.ps1\u0027], { stdio: \u0027inherit\u0027 }); process.exit(r.status !== null ? r.status : 1); }\"",
-        "build": "npm run ensure-nsis \u0026\u0026 vite build \u0026\u0026 tauri build",
+        "ensure-nsis": "node -e \"if (process.platform === 'win32') { console.log('[ensure-nsis] 未找到 scripts/ensure-nsis-windows.ps1，跳过 NSIS 预检查'); }\"",
+        "build": "npm run ensure-nsis && vite build && tauri build",
         "build:web": "vite build",
         "tauri": "tauri",
         "tauri:dev": "tauri dev",
