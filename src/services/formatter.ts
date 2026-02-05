@@ -17,4 +17,3 @@ export function formatJson(value: JsonValue, indentation: Indentation): string {
 export function compressJson(value: JsonValue): string {
   return JSON.stringify(value);
 }
-
